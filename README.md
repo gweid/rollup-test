@@ -235,3 +235,155 @@ export default {
 
 ![](/imgs/img1.png)
 
+
+
+### 打包 CommonJS 代码
+
+rollup 默认是针对 esmodule 打包的，也就是说，在代码中通过 commonjs 的方式写代码，虽然是不会打包失败，但是打包出来的代码浏览器并不能识别，所以会造成浏览器报错
+
+例如：
+
+> src/utils/common.js
+
+```js
+const msg = 'commonjs 模块化'
+
+module.exports = {
+  msg
+}
+```
+
+> src/index.js
+
+```js
+const { msg } = require('./utils/common')
+
+console.log(msg)
+```
+
+打包后的结果：
+
+```js
+(function (factory) {
+	typeof define === 'function' && define.amd ? define(factory) :
+	factory();
+}((function () { 'use strict';
+
+	const { msg } = require('./utils/common');
+
+	console.log(msg);
+})));
+```
+
+可以看到，打包后依然是通过 require 引入代码，直接在浏览器中是不能识别的，所以会报错
+
+此时，就需要用到插件去处理，rollup 官方插件库：
+
+```
+https://github.com/rollup/plugins
+```
+
+使用 `@rollup/plugin-commonjs` 处理：
+
+安装：
+
+```js
+npm install @rollup/plugin-commonjs -D
+```
+
+使用：
+
+```js
+import commonjs from '@rollup/plugin-commonjs'
+
+export default {
+  input: './src/index.js',
+  output: {
+    format: 'umd',
+    name: 'gweidUtils',
+    file: 'dist/bundle.common.js'
+  },
+  plugins: [
+    commonjs()
+  ]
+}
+```
+
+但是同时注意，在导入的时候改为：esmodule 方式
+
+> src/index.js
+
+```js
+import { msg } from './utils/common'
+
+console.log(msg)
+```
+
+如果不安装 commonjs 的时候，使用 CommonJS 导出，esModule 导入打包会报错
+
+**基于以上问题，还是不建议在 rollup 中写 CommonJS 的代码，直接写 esModule 代码**
+
+思考：为什么 rollup 要这样子做呢？支持  CommonJS 导出，但是必须要 esModule 导入，并且就算是 CommonJS 导出的也必须使用 esModule 导入，通过 `@rollup/plugin-commonjs` 解决
+
+> 因为，当在 rollup 中使用到一些第三方库的时候，可能第三方库就只有 CommonJS 导出的，那么就需要支持 CommonJS 导出
+
+
+
+### 使用第三方库
+
+比如，需要使用 lodash：
+
+> src/index.js
+
+```js
+import _ from 'lodash'
+
+console.log(_.merge({name: 'hahaha'}, {age: 18}))
+```
+
+如果直接打包，会发现打包后的结果根本就没有 lodash 代码：
+
+```js
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('lodash')) :
+	typeof define === 'function' && define.amd ? define(['lodash'], factory) :
+	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global._));
+}(this, (function (_) { 'use strict';
+
+	function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+	var ___default = /*#__PURE__*/_interopDefaultLegacy(_);
+
+	console.log(___default['default'].merge({name: 'hahaha'}, {age: 18}));
+
+})));
+```
+
+这是因为，rollup 中规定使用第三方包，也就是安装在 node_modules 下面的包，需要使用插件 `@rollup/plugin-node-resolve` 处理
+
+安装：
+
+```js
+npm install @rollup/plugin-node-resolve -D
+```
+
+使用：lodash 也是 common 导出的，所以也需要使用插件 `@rollup/plugin-commonjs`
+
+```js
+import commonjs from '@rollup/plugin-commonjs'
+import nodeResolve from '@rollup/plugin-node-resolve' // 引用第三方包
+
+export default {
+  input: './src/index.js',
+  output: {
+    format: 'umd',
+    name: 'gweidUtils',
+    file: 'dist/bundle.common.js'
+  },
+  plugins: [
+    commonjs(),
+    nodeResolve()
+  ]
+}
+```
+
