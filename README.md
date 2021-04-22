@@ -387,3 +387,46 @@ export default {
 }
 ```
 
+如果不想将 lodash 打包进 bundle 里面，也可以使用外链的形式，使用 external 属性排除需要打包的三方包，配置 output 的 globals
+
+```js
+import commonjs from '@rollup/plugin-commonjs'
+import nodeResolve from '@rollup/plugin-node-resolve' // 引用第三方包
+
+export default {
+  input: './src/index.js',
+  output: {
+    format: 'umd',
+    name: 'gweidUtils',
+    file: 'dist/bundle.common.js',
+    globals: {
+      lodash: "_"
+    }
+  },
+  external: ['lodash'],
+  plugins: [
+    commonjs(),
+    nodeResolve()
+  ]
+}
+```
+
+这样子，就不会将 lodash 打包进去了，但是需要使用者手动引入 
+
+```js
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    // 手动引入 lodash
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <script src="./dist/bundle.common.js"></script>
+</body>
+</html>
+```
+

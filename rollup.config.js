@@ -6,8 +6,12 @@ export default {
   output: {
     format: 'umd',
     name: 'gweidUtils',
-    file: 'dist/bundle.common.js'
+    file: 'dist/bundle.common.js',
+    globals: {
+      lodash: "_"
+    }
   },
+  external: ['lodash'],
   plugins: [
     commonjs(),
     nodeResolve()
