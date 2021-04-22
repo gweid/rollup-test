@@ -24,6 +24,8 @@ Rollup 是一个 JavaScript 的模块化打包工具，可以帮助我们编译�
 
 ## 基本使用
 
+
+
 ### 配置文件
 
 跟 webpack 类似，rollup 也是通过配置文件，传入需要使用的打包配置
@@ -60,7 +62,8 @@ export default {
 }
 ```
 
--c 后面可以指定配置文件，如果使用默认 rollup.config.js 则不需要写
+- -c 后面可以指定配置文件，如果使用默认 rollup.config.js 则不需要写
+- -w 代表开启文件监听，当文件发生变化，重新编译
 
 
 
@@ -429,4 +432,280 @@ export default {
 </body>
 </html>
 ```
+
+
+
+### 使用 babel 转换代码
+
+在 rollup 中使用 babel 跟 webpack 很相似，首先，安装：
+
+```js
+npm i @babel/core @rollup/plugin-babel @babel/preset-env -D
+```
+
+使用：
+
+rollup.config.js:
+
+```js
+import babel from '@rollup/plugin-babel'
+
+export default {
+  input: './src/index.js',
+  output: {
+    format: 'umd',
+    name: 'gweidUtils',
+    file: 'dist/bundle.js'
+  },
+  plugins: [
+    babel({
+      babelHelpers: 'bundled', // 代表后面很多东西使用同一个类，只创建一个类
+      exclude: 'node_modules/**' // 忽略 node_modules
+    })
+  ]
+}
+```
+
+根目录建 babel.config.js
+
+```js
+module.exports = {
+  presets: [
+    '@babel/preset-env'
+  ]
+}
+```
+
+
+
+### 使用 terser 压缩 js
+
+rollup 官方并没有提供 terser，但是可以去社区找找，比如直接在 github 中搜索：rollup-plugin-terser，一般在 github 中找 rollup 插件，都快同意使用 rollup-plugin-xxx 的形式
+
+安装：
+
+```js
+npm i rollup-plugin-terser -D
+```
+
+使用：
+
+```js
+import { terser } from 'rollup-plugin-terser'
+
+export default {
+  input: './src/index.js',
+  output: {
+    format: 'umd',
+    name: 'gweidUtils',
+    file: 'dist/bundle.js'
+  },
+  plugins: [
+    terser()
+  ]
+}
+```
+
+
+
+### 使用 postcss 处理 css
+
+postcss 处理 css，给 css 添加前缀
+
+安装：
+
+```js
+npm i postcss rollup-plugin-postcss postcss-preset-env -D
+```
+
+使用：
+
+```js
+import postcss from 'rollup-plugin-postcss'
+import postcssPresetEnv from 'postcss-preset-env'
+
+export default {
+  input: './src/index.js',
+  output: {
+    format: 'umd',
+    name: 'gweidUtils',
+    file: 'dist/bundle.js'
+  },
+  plugins: [
+    postcss({
+      plugins: [
+        postcssPresetEnv({ browsers: ['last 2 version'] })
+      ] 
+    })
+  ]
+}
+```
+
+
+
+### 搭建本地服务
+
+使用 `rollup-plugin-serve` 搭建本地服务
+
+安装：
+
+```js
+npm i rollup-plugin-serve -D
+```
+
+使用：
+
+```js
+import devServer from 'rollup-plugin-serve'
+
+export default {
+  input: './src/index.js',
+  output: {
+    format: 'umd',
+    name: 'gweidUtils',
+    file: 'dist/bundle.js'
+  },
+  plugins: [
+    devServer({
+      open: true, // 自动打开浏览器
+      port: 9000,
+      contentBase: '.' // 服务于哪个文件夹，一般跟 index.html 保持一致
+    })
+  ]
+}
+```
+
+
+
+使用  `rollup -c -w` 实现：当文件发生变化，重新编译
+
+使用 `rollup-plugin-livereload` 实现：自动刷新浏览器
+
+配置 package.json
+
+```js
+{
+    "scripts": {
+        "dev": "rollup -c -w",
+     }
+}
+```
+
+安装 ：
+
+```js
+npm i rollup-plugin-livereload-D
+```
+
+使用：
+
+```js
+import devServer from 'rollup-plugin-serve'
+import livereload from 'rollup-plugin-livereload'
+
+export default {
+  input: './src/index.js',
+  output: {
+    format: 'umd',
+    name: 'gweidUtils',
+    file: 'dist/bundle.js'
+  },
+  plugins: [
+    // 开启本地服务器
+    devServer({
+      open: true, // 自动打开浏览器
+      port: 9000,
+      contentBase: '.' // 服务于哪个文件夹，一般跟 index.html 保持一致
+    }),
+    // 自动刷新浏览器
+    livereload()
+  ]
+}
+
+```
+
+
+
+### 开发生产环境区分
+
+在 package.json 中配置：
+
+```js
+{
+    "scripts": {
+      "dev": "rollup -c --environment NODE_ENV:development -w",
+      "build": "rollup -c --environment NODE_ENV:production"
+    }
+}
+```
+
+然后在 rollup.config.js 中可以通过 `process.env.NODE_ENV` 获取到
+
+最后完整实例：
+
+```js
+import commonjs from '@rollup/plugin-commonjs'
+import nodeResolve from '@rollup/plugin-node-resolve' // 引用第三方包
+
+import babel from '@rollup/plugin-babel'
+import { terser } from 'rollup-plugin-terser'
+import postcss from 'rollup-plugin-postcss'
+import postcssPresetEnv from 'postcss-preset-env'
+
+import devServer from 'rollup-plugin-serve'
+import livereload from 'rollup-plugin-livereload'
+
+const isProd = process.env.NODE_ENV === 'production'
+
+const plugins = [
+  commonjs(),
+  nodeResolve(),
+  babel({
+    babelHelpers: 'bundled', // 代表后面很多东西使用同一个类，只创建一个类
+    exclude: 'node_modules/**' // 忽略 node_modules
+  }),
+  postcss({
+    plugins: [
+      postcssPresetEnv({ browsers: ['last 2 version'] })
+    ]
+  })
+]
+
+if (isProd) {
+  plugins.push(terser())
+} else {
+  plugins.push(...[
+    // 开启本地服务器
+    devServer({
+      open: true, // 自动打开浏览器
+      port: 9000,
+      contentBase: '.' // 服务于哪个文件夹，一般跟 index.html 保持一致
+    }),
+    // 自动刷新浏览器
+    livereload()
+  ])
+}
+
+export default {
+  input: './src/index.js',
+  output: {
+    format: 'umd',
+    name: 'gweidUtils',
+    file: 'dist/bundle.js',
+    globals: {
+      lodash: "_"
+    }
+  },
+  external: ['lodash'],
+  plugins: plugins
+}
+```
+
+
+
+## 总结
+
+rollup 的能力大部分都是通过插件赋予的
+
+
 

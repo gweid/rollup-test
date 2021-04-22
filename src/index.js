@@ -1,6 +1,7 @@
 import { formatPrice } from './utils/tools'
 import { msg } from './utils/common'
 import _ from 'lodash'
+import './style/common.css'
 
 const sum = (num1, num2) => {
   return num1 + num2
