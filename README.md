@@ -1,5 +1,9 @@
 # rollup
 
+可以参考的文章：
+
+- [最详细的Rollup打包项目教程](https://juejin.cn/post/7145090564801691684)
+
 
 
 ## rollup 的定义
@@ -236,7 +240,7 @@ export default {
 
 就可以分别生成支持不同环境的库文件
 
-![](/imgs/img1.png)
+ ![](./imgs/img1.png)
 
 
 
@@ -390,6 +394,8 @@ export default {
 }
 ```
 
+
+
 如果不想将 lodash 打包进 bundle 里面，也可以使用外链的形式，使用 external 属性排除需要打包的三方包，配置 output 的 globals
 
 ```js
@@ -431,6 +437,32 @@ export default {
     <script src="./dist/bundle.common.js"></script>
 </body>
 </html>
+```
+
+
+
+每个类库都要手动添加至 externals 未免太麻烦，这时候可以用 `rollup-plugin-node-externals` 插件，自动将外部类库声明为 externals。
+
+安装：
+
+```shell
+npm install rollup-plugin-node-externals -D
+```
+
+使用：
+
+```js
+import externals from "rollup-plugin-node-externals";
+
+export default [
+  {
+    plugins: [
+      externals({
+        devDeps: false, // devDependencies 类型的依赖就不用加到 externals 了。
+      }),
+    ],
+  },
+];
 ```
 
 
@@ -508,9 +540,9 @@ export default {
 
 
 
-### 使用 postcss 处理 css
+### 使用 postcss 处理 css、sass、less
 
-postcss 处理 css，给 css 添加前缀
+postcss 处理 css，给 css 添加前缀（rollup-plugin-postcss 默认集成了对css、 scss、less、stylus 的支持）
 
 安装：
 
@@ -540,6 +572,131 @@ export default {
   ]
 }
 ```
+
+
+
+可以使用 cssnano 对 css 进行压缩处理
+
+安装：
+
+```shell
+npm install cssnano -D
+```
+
+使用：
+
+```js
+import cssnano from "cssnano";
+import postcss from "rollup-plugin-postcss";
+
+export default {
+  input: "src/main.js",
+  output: {
+    file: "bundle.js",
+    format: "umd",
+    name: "test",
+  },
+  plugins: [
+    postcss({
+      plugins: [cssnano()],
+    }),
+  ]
+};
+```
+
+
+
+抽离单独的 css 文件
+
+```js
+import cssnano from "cssnano";
+import postcss from "rollup-plugin-postcss";
+
+export default [
+  {
+    plugins: [
+      postcss({
+        plugins: [cssnano()],
+        extract: "css/index.css",
+      }),
+    ],
+  },
+];
+```
+
+
+
+#### 处理 Typescript
+
+可以使用 ` 插件对 typescript` 插件对 typescript 进行处理
+
+安装：
+
+```shell
+npm install @rollup/plugin-typescript -D
+```
+
+使用：
+
+```js
+import typescript from "@rollup/plugin-typescript";
+export default [
+  {
+    plugins: [typescript()];
+  }
+];
+```
+
+
+
+导出类型声明文件：
+
+```js
+import typescript from "@rollup/plugin-typescript";
+export default [
+  {
+    plugins: [
+        typescript({
+            outDir: "dist",
+            declaration: true,
+            declarationDir: "dist",
+        })
+    ];
+  }
+];
+```
+
+
+
+或者使用 `rollup-plugin-typescript2` 插件对 typescript 进行处理
+
+
+
+#### 打包产物清除调试代码
+
+可以通过插件 `@rollup/plugin-strip` 删除代码中的 debugger 语句和函数。包括 assert.equal、console.log 等等
+
+安装：
+
+```shell
+npm install @rollup/plugin-strip -D
+```
+
+使用：
+
+```js
+import strip from "@rollup/plugin-strip";
+
+export default [
+  {
+    plugins: [
+        strip()
+    ];
+  }
+];
+```
+
+
 
 
 
